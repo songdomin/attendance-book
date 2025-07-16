@@ -5,114 +5,109 @@
   <title>QR 출퇴근 시스템</title>
   <style>
     body {
-      font-family: 'Arial';
+      font-family: Arial, sans-serif;
       text-align: center;
       padding: 20px;
     }
     video {
-      width: 300px;
-      height: auto;
-      border: 1px solid #ccc;
-    }
-    canvas {
-      display: none;
+      width: 100%;
+      max-width: 400px;
+      border: 2px solid #666;
+      border-radius: 10px;
     }
     table {
       width: 100%;
-      margin-top: 20px;
+      max-width: 600px;
+      margin: 20px auto;
       border-collapse: collapse;
     }
     th, td {
       border: 1px solid #aaa;
-      padding: 8px;
+      padding: 10px;
     }
-    .confirmed {
-      color: green;
-      font-weight: bold;
+    th {
+      background: #f0f0f0;
+    }
+    button {
+      padding: 10px 20px;
+      margin-top: 15px;
     }
   </style>
 </head>
 <body>
-  <h1>QR 출퇴근 시스템</h1>
+  <h1>📌 QR 출퇴근 시스템</h1>
+  <p>스마트폰 후면 카메라로 QR 코드를 인식하면 출근/퇴근이 자동 기록됩니다.</p>
 
-  <!-- QR 코드 생성 -->
-  <input type="text" id="qrInput" placeholder="이름 입력">
-  <button onclick="generateQR()">QR 생성</button>
-  <div id="qrcode"></div>
-
-  <!-- QR 코드 카메라 인식 -->
-  <h2>카메라로 QR 인식</h2>
   <video id="video" autoplay></video>
-  <canvas id="canvas" hidden></canvas>
+  <canvas id="canvas" style="display:none;"></canvas>
 
-  <!-- 출퇴근 확인 -->
-  <h2>출퇴근 기록</h2>
   <table id="logTable">
-    <tr>
-      <th>이름</th>
-      <th>시간</th>
-      <th>구분</th>
-      <th>확인</th>
-    </tr>
+    <thead>
+      <tr>
+        <th>이름</th>
+        <th>시간</th>
+        <th>구분</th>
+        <th>확인</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
   </table>
 
   <button onclick="downloadCSV()">CSV 다운로드</button>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
-
   <script>
-    const qrcodeEl = document.getElementById("qrcode");
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    const logTable = document.getElementById("logTable");
-
+    const tableBody = document.querySelector("#logTable tbody");
     const logs = [];
-
-    function generateQR() {
-      const name = document.getElementById("qrInput").value.trim();
-      if (!name) return alert("이름을 입력하세요.");
-      qrcodeEl.innerHTML = "";
-      QRCode.toCanvas(document.createElement("canvas"), name, function (err, canvas) {
-        if (err) return console.error(err);
-        qrcodeEl.appendChild(canvas);
-      });
-    }
 
     function addLog(name) {
       const now = new Date();
       const time = now.toLocaleString("ko-KR");
-      const today = now.toISOString().slice(0, 10);
+      const date = now.toISOString().split("T")[0];
 
-      const existing = logs.find(l => l.name === name && l.date === today);
-      let type = "출근";
-      if (existing && existing.type === "출근") {
-        type = "퇴근";
-      }
+      const existing = logs.find(log => log.name === name && log.date === date);
+      const type = existing && existing.type === "출근" ? "퇴근" : "출근";
 
-      const confirmMsg = `${name}님 ${type} 기록하시겠습니까?`;
-      if (!confirm(confirmMsg)) return;
+      if (!confirm(`${name}님, ${type} 처리하시겠습니까?`)) return;
 
-      logs.push({ name, time, type, date: today });
+      const entry = { name, time, type, date };
+      logs.push(entry);
 
-      const row = logTable.insertRow();
-      row.insertCell(0).innerText = name;
-      row.insertCell(1).innerText = time;
-      row.insertCell(2).innerText = type;
-      row.insertCell(3).innerText = "✔️";
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${entry.name}</td>
+        <td>${entry.time}</td>
+        <td>${entry.type}</td>
+        <td>✔️</td>
+      `;
+      tableBody.appendChild(row);
 
-      saveToGoogleSheet(name, time, type);
+      // Google Sheets 저장
+      fetch("https://script.google.com/macros/s/AKfycbwXb6MekhTCTPIG4gVhQYz-tKt3mGu39GhqOqnZDmZCpmIyQAi_mRx6uyts9QDm3GcMzQ/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: entry.name,
+          time: entry.time,
+          type: entry.type
+        })
+      }).catch(err => console.error("Google 저장 실패", err));
     }
 
     function scanQRCode() {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, canvas.width, canvas.height);
-      if (code && code.data) {
-        addLog(code.data);
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, canvas.width, canvas.height);
+        if (code && code.data) {
+          addLog(code.data.trim());
+        }
       }
     }
 
@@ -121,10 +116,10 @@
         video: { facingMode: { ideal: "environment" } }
       }).then(stream => {
         video.srcObject = stream;
-        setInterval(scanQRCode, 1000);
+        setInterval(scanQRCode, 1500);
       }).catch(err => {
+        alert("카메라를 사용할 수 없습니다.");
         console.error(err);
-        alert("카메라 접근 실패");
       });
     }
 
@@ -133,24 +128,12 @@
       logs.forEach(log => {
         csv += `${log.name},${log.time},${log.type}\n`;
       });
-
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = "출퇴근기록.csv";
       link.click();
-    }
-
-    function saveToGoogleSheet(name, time, type) {
-      fetch("https://script.google.com/macros/s/AKfycbwXb6MekhTCTPIG4gVhQYz-tKt3mGu39GhqOqnZDmZCpmIyQAi_mRx6uyts9QDm3GcMzQ/exec", {
-        method: "POST",
-        mode: "no-cors",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ name, time, type })
-      }).catch(error => console.error("Google Sheets 저장 실패:", error));
     }
 
     startCamera();
