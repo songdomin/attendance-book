@@ -62,14 +62,15 @@
     }
 
     #reader {
-      width: 300px;
+      width: 100%;
+      max-width: 400px;
       margin-top: 20px;
     }
   </style>
 </head>
 <body>
 
-  <!-- QR 생성기 -->
+  <!-- QR 코드 생성기 -->
   <div class="section">
     <h1>📌 직원 QR 코드 생성기</h1>
     <input type="text" id="employeeId" placeholder="직원 이름 또는 ID 입력">
@@ -78,7 +79,7 @@
     <a id="downloadLink" download="qrcode.png">📥 QR 코드 다운로드</a>
   </div>
 
-  <!-- 출근부 -->
+  <!-- 출근부 시스템 -->
   <div class="section">
     <h1>🕓 직원 출근부 (QR 스캔 인식)</h1>
     <div id="reader"></div>
@@ -121,7 +122,7 @@
       });
     }
 
-    // 출퇴근 기록 업데이트
+    // 출퇴근 기록 저장
     function recordAttendance(id) {
       const now = new Date().toLocaleTimeString();
 
@@ -136,7 +137,7 @@
       updateTable();
     }
 
-    // 출근부 테이블 렌더링
+    // 출근부 테이블 갱신
     function updateTable() {
       const table = document.getElementById("attendanceTable");
       table.innerHTML = "";
@@ -152,25 +153,25 @@
       }
     }
 
-    // QR 코드 리더기 초기화
+    // 카메라 초기화 및 후면 카메라 우선 선택
     const html5QrCode = new Html5Qrcode("reader");
 
     Html5Qrcode.getCameras().then(cameras => {
       if (cameras && cameras.length) {
-        const cameraId = cameras[0].id;
+        // 'back' 또는 'environment' 카메라를 우선 선택
+        const backCamera = cameras.find(cam =>
+          cam.label.toLowerCase().includes("back") ||
+          cam.label.toLowerCase().includes("environment")
+        ) || cameras[0];
 
         html5QrCode.start(
-          cameraId,
-          {
-            fps: 10,
-            qrbox: 250
-          },
+          backCamera.id,
+          { fps: 10, qrbox: 250 },
           qrCodeMessage => {
-            // QR 인식 시 실행
             recordAttendance(qrCodeMessage.trim());
           },
           errorMessage => {
-            // console.log("인식 실패:", errorMessage);
+            // 오류 무시 가능
           }
         );
       }
