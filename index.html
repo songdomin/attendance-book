@@ -78,7 +78,7 @@
 
   <script>
     const logs = [];
-    const allowedQRs = new Set();
+    const allowedQRs = new Set(JSON.parse(localStorage.getItem("allowedQRs") || "[]"));
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
@@ -94,6 +94,7 @@
       }
       container.innerHTML = "";
       allowedQRs.add(id);
+      localStorage.setItem("allowedQRs", JSON.stringify([...allowedQRs]));
       QRCode.toDataURL(id, { width: 200 }, (err, url) => {
         const img = document.createElement("img");
         img.src = url;
