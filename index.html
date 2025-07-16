@@ -45,7 +45,7 @@
 </head>
 <body>
 
-  <h1>✅ QR 출퇴근 시스템</h1>
+  <h1>✅ QR 출트퇰 시스템</h1>
 
   <!-- QR 코드 생성기 -->
   <h2>🔲 직원 QR 코드 생성기</h2>
@@ -56,7 +56,7 @@
   <hr>
 
   <!-- QR 카메라 인식 -->
-  <h2>📷 QR 카메라 인식 (출근/퇴근)</h2>
+  <h2>📷 QR 카메라 인식 (출근/퇰근)</h2>
   <video id="video" autoplay></video>
   <canvas id="canvas" style="display: none;"></canvas>
 
@@ -67,17 +67,18 @@
       <tr>
         <th>이름</th>
         <th>시간</th>
-        <th>구분</th>
+        <th>구매</th>
         <th>확인</th>
       </tr>
     </thead>
     <tbody id="logTableBody"></tbody>
   </table>
 
-  <button onclick="downloadCSV()">📥 CSV 다운로드</button>
+  <button onclick="downloadCSV()">📅 CSV 다운로드</button>
 
   <script>
     const logs = [];
+    const allowedQRs = new Set();
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
@@ -92,6 +93,7 @@
         return;
       }
       container.innerHTML = "";
+      allowedQRs.add(id);
       QRCode.toDataURL(id, { width: 200 }, (err, url) => {
         const img = document.createElement("img");
         img.src = url;
@@ -99,7 +101,7 @@
       });
     }
 
-    // 카메라 QR 인식
+    // QR 인식
     function scanQRCode() {
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
         canvas.width = video.videoWidth;
@@ -108,19 +110,24 @@
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, canvas.width, canvas.height);
         if (code && code.data) {
-          processQR(code.data.trim());
+          const data = code.data.trim();
+          if (!allowedQRs.has(data)) {
+            alert("유효하지 않은 QR 코드입니다.");
+            return;
+          }
+          processQR(data);
         }
       }
     }
 
-    // 출퇴근 기록 처리
+    // 출근/퇰근 기록 처리
     function processQR(name) {
       const now = new Date();
       const time = now.toLocaleString("ko-KR");
       const date = now.toISOString().split("T")[0];
 
       const existing = logs.find(log => log.name === name && log.date === date);
-      const type = existing && existing.type === "출근" ? "퇴근" : "출근";
+      const type = existing && existing.type === "출근" ? "퇰근" : "출근";
 
       if (!confirm(`${name}님 ${type} 처리하시겠습니까?`)) return;
 
@@ -146,14 +153,14 @@
 
     // CSV 다운로드
     function downloadCSV() {
-      let csv = "이름,시간,구분\n";
+      let csv = "이름,시간,구매\n";
       logs.forEach(log => {
         csv += `${log.name},${log.time},${log.type}\n`;
       });
-      const blob = new Blob([csv], { type: "text/csv" });
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = "출퇴근기록.csv";
+      link.download = "출트퇰근기록.csv";
       link.click();
     }
 
@@ -165,7 +172,7 @@
         video.srcObject = stream;
         setInterval(scanQRCode, 1500);
       }).catch(err => {
-        alert("카메라 접근 오류: " + err.message);
+        alert("\uce74\uba54\ub77c \uc811\uadfc \uc624\ub958: " + err.message);
       });
     }
 
