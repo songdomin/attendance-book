@@ -1,47 +1,68 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>QR 출퇴근 시스템</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+  <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      text-align: center;
+      background: #f8f9fa;
       padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #333;
     }
     video {
       width: 100%;
       max-width: 400px;
-      border: 2px solid #666;
+      border: 2px solid #aaa;
       border-radius: 10px;
+    }
+    #qrcodeCanvas img {
+      margin-top: 10px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
     }
     table {
       width: 100%;
-      max-width: 600px;
+      max-width: 700px;
       margin: 20px auto;
       border-collapse: collapse;
     }
     th, td {
-      border: 1px solid #aaa;
-      padding: 10px;
+      border: 1px solid #ccc;
+      padding: 8px;
     }
     th {
-      background: #f0f0f0;
-    }
-    button {
-      padding: 10px 20px;
-      margin-top: 15px;
+      background: #eee;
     }
   </style>
 </head>
 <body>
-  <h1>📌 QR 출퇴근 시스템</h1>
-  <p>스마트폰 후면 카메라로 QR 코드를 인식하면 출근/퇴근이 자동 기록됩니다.</p>
 
+  <h1>✅ QR 출퇴근 시스템</h1>
+
+  <!-- QR 코드 생성기 -->
+  <h2>🔲 직원 QR 코드 생성기</h2>
+  <input type="text" id="employeeId" placeholder="직원 이름 또는 ID 입력">
+  <button onclick="generateQRCode()">QR 코드 생성</button>
+  <div id="qrcodeCanvas"></div>
+
+  <hr>
+
+  <!-- QR 카메라 인식 -->
+  <h2>📷 QR 카메라 인식 (출근/퇴근)</h2>
   <video id="video" autoplay></video>
-  <canvas id="canvas" style="display:none;"></canvas>
+  <canvas id="canvas" style="display: none;"></canvas>
 
-  <table id="logTable">
+  <!-- 출근부 테이블 -->
+  <h2>🕓 출근부 기록</h2>
+  <table>
     <thead>
       <tr>
         <th>이름</th>
@@ -50,54 +71,35 @@
         <th>확인</th>
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody id="logTableBody"></tbody>
   </table>
 
-  <button onclick="downloadCSV()">CSV 다운로드</button>
+  <button onclick="downloadCSV()">📥 CSV 다운로드</button>
 
-  <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
   <script>
+    const logs = [];
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    const tableBody = document.querySelector("#logTable tbody");
-    const logs = [];
+    const logTableBody = document.getElementById("logTableBody");
 
-    function addLog(name) {
-      const now = new Date();
-      const time = now.toLocaleString("ko-KR");
-      const date = now.toISOString().split("T")[0];
-
-      const existing = logs.find(log => log.name === name && log.date === date);
-      const type = existing && existing.type === "출근" ? "퇴근" : "출근";
-
-      if (!confirm(`${name}님, ${type} 처리하시겠습니까?`)) return;
-
-      const entry = { name, time, type, date };
-      logs.push(entry);
-
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${entry.name}</td>
-        <td>${entry.time}</td>
-        <td>${entry.type}</td>
-        <td>✔️</td>
-      `;
-      tableBody.appendChild(row);
-
-      // Google Sheets 저장
-      fetch("https://script.google.com/macros/s/AKfycbwXb6MekhTCTPIG4gVhQYz-tKt3mGu39GhqOqnZDmZCpmIyQAi_mRx6uyts9QDm3GcMzQ/exec", {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: entry.name,
-          time: entry.time,
-          type: entry.type
-        })
-      }).catch(err => console.error("Google 저장 실패", err));
+    // QR 코드 생성
+    function generateQRCode() {
+      const id = document.getElementById("employeeId").value.trim();
+      const container = document.getElementById("qrcodeCanvas");
+      if (!id) {
+        alert("직원 이름 또는 ID를 입력해주세요.");
+        return;
+      }
+      container.innerHTML = "";
+      QRCode.toDataURL(id, { width: 200 }, (err, url) => {
+        const img = document.createElement("img");
+        img.src = url;
+        container.appendChild(img);
+      });
     }
 
+    // 카메라 QR 인식
     function scanQRCode() {
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
         canvas.width = video.videoWidth;
@@ -106,11 +108,56 @@
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, canvas.width, canvas.height);
         if (code && code.data) {
-          addLog(code.data.trim());
+          processQR(code.data.trim());
         }
       }
     }
 
+    // 출퇴근 기록 처리
+    function processQR(name) {
+      const now = new Date();
+      const time = now.toLocaleString("ko-KR");
+      const date = now.toISOString().split("T")[0];
+
+      const existing = logs.find(log => log.name === name && log.date === date);
+      const type = existing && existing.type === "출근" ? "퇴근" : "출근";
+
+      if (!confirm(`${name}님 ${type} 처리하시겠습니까?`)) return;
+
+      const entry = { name, time, type, date };
+      logs.push(entry);
+
+      const row = document.createElement("tr");
+      row.innerHTML = `<td>${entry.name}</td><td>${entry.time}</td><td>${entry.type}</td><td>✔️</td>`;
+      logTableBody.appendChild(row);
+
+      saveToGoogleSheets(entry);
+    }
+
+    // Google Sheets 저장
+    function saveToGoogleSheets(entry) {
+      fetch("https://script.google.com/macros/s/AKfycbwXb6MekhTCTPIG4gVhQYz-tKt3mGu39GhqOqnZDmZCpmIyQAi_mRx6uyts9QDm3GcMzQ/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(entry)
+      }).catch(err => console.error("Google 저장 오류", err));
+    }
+
+    // CSV 다운로드
+    function downloadCSV() {
+      let csv = "이름,시간,구분\n";
+      logs.forEach(log => {
+        csv += `${log.name},${log.time},${log.type}\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "출퇴근기록.csv";
+      link.click();
+    }
+
+    // 카메라 시작
     function startCamera() {
       navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: "environment" } }
@@ -118,25 +165,12 @@
         video.srcObject = stream;
         setInterval(scanQRCode, 1500);
       }).catch(err => {
-        alert("카메라를 사용할 수 없습니다.");
-        console.error(err);
+        alert("카메라 접근 오류: " + err.message);
       });
-    }
-
-    function downloadCSV() {
-      let csv = "이름,시간,구분\n";
-      logs.forEach(log => {
-        csv += `${log.name},${log.time},${log.type}\n`;
-      });
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "출퇴근기록.csv";
-      link.click();
     }
 
     startCamera();
   </script>
+
 </body>
 </html>
