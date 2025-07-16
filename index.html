@@ -45,7 +45,7 @@
 </head>
 <body>
 
-  <h1>✅ QR 출트퇰 시스템</h1>
+  <h1>✅ QR 출퇴근 시스템</h1>
 
   <!-- QR 코드 생성기 -->
   <h2>🔲 직원 QR 코드 생성기</h2>
@@ -56,7 +56,7 @@
   <hr>
 
   <!-- QR 카메라 인식 -->
-  <h2>📷 QR 카메라 인식 (출근/퇰근)</h2>
+  <h2>📷 QR 카메라 인식 (출근/퇴근)</h2>
   <video id="video" autoplay></video>
   <canvas id="canvas" style="display: none;"></canvas>
 
@@ -120,14 +120,14 @@
       }
     }
 
-    // 출근/퇰근 기록 처리
+    // 출근/퇴근 기록 처리
     function processQR(name) {
       const now = new Date();
       const time = now.toLocaleString("ko-KR");
       const date = now.toISOString().split("T")[0];
 
       const existing = logs.find(log => log.name === name && log.date === date);
-      const type = existing && existing.type === "출근" ? "퇰근" : "출근";
+      const type = existing && existing.type === "출근" ? "퇴근" : "출근";
 
       if (!confirm(`${name}님 ${type} 처리하시겠습니까?`)) return;
 
