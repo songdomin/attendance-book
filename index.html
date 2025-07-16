@@ -51,6 +51,8 @@
   <h2>🔲 직원 QR 코드 생성기</h2>
   <input type="text" id="employeeId" placeholder="직원 이름 또는 ID 입력">
   <button onclick="generateQRCode()">QR 코드 생성</button>
+  <button onclick="saveQRListToFile()">📥 QR 목록 저장</button>
+  <input type="file" id="qrFileInput" accept=".json" onchange="loadQRListFromFile(event)">
   <div id="qrcodeCanvas"></div>
 
   <hr>
@@ -84,7 +86,6 @@
     const ctx = canvas.getContext("2d");
     const logTableBody = document.getElementById("logTableBody");
 
-    // QR 코드 생성
     function generateQRCode() {
       const id = document.getElementById("employeeId").value.trim();
       const container = document.getElementById("qrcodeCanvas");
@@ -102,7 +103,6 @@
       });
     }
 
-    // QR 인식
     function scanQRCode() {
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
         canvas.width = video.videoWidth;
@@ -121,12 +121,10 @@
       }
     }
 
-    // 출근/퇴근 기록 처리
     function processQR(name) {
       const now = new Date();
       const time = now.toLocaleString("ko-KR");
       const date = now.toISOString().split("T")[0];
-
       const existing = logs.find(log => log.name === name && log.date === date);
       const type = existing && existing.type === "출근" ? "퇴근" : "출근";
 
@@ -142,7 +140,6 @@
       saveToGoogleSheets(entry);
     }
 
-    // Google Sheets 저장
     function saveToGoogleSheets(entry) {
       fetch("https://script.google.com/macros/s/AKfycbwGBYXHIIJZh0IiXwfNQl1f9h7PHlXAVS7cnIeaysOkccw1PUaL0qv1n1FZkce-1f3O/exec", {
         method: "POST",
@@ -152,7 +149,6 @@
       }).catch(err => console.error("Google 저장 오류", err));
     }
 
-    // CSV 다운로드
     function downloadCSV() {
       let csv = "이름,시간,출·퇴근\n";
       logs.forEach(log => {
@@ -165,7 +161,31 @@
       link.click();
     }
 
-    // 카메라 시작
+    function saveQRListToFile() {
+      const blob = new Blob([JSON.stringify([...allowedQRs])], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "qr_list.json";
+      link.click();
+    }
+
+    function loadQRListFromFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const loaded = JSON.parse(e.target.result);
+          loaded.forEach(id => allowedQRs.add(id));
+          localStorage.setItem("allowedQRs", JSON.stringify([...allowedQRs]));
+          alert("QR 목록이 성공적으로 불러와졌습니다.");
+        } catch (err) {
+          alert("QR 목록 파일 오류: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
     function startCamera() {
       navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: "environment" } }
