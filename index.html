@@ -160,7 +160,7 @@
       const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = "출트퇰근기록.csv";
+      link.download = "출퇴근기록.csv";
       link.click();
     }
 
