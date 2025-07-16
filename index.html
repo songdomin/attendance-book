@@ -79,12 +79,18 @@
   <button onclick="downloadCSV()">📅 CSV 다운로드</button>
 
   <script>
-    const logs = [];
+    const logs = JSON.parse(localStorage.getItem("attendanceLogs") || "[]");
     const allowedQRs = new Set(JSON.parse(localStorage.getItem("allowedQRs") || "[]"));
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     const logTableBody = document.getElementById("logTableBody");
+
+    logs.forEach(entry => {
+      const row = document.createElement("tr");
+      row.innerHTML = `<td>${entry.name}</td><td>${entry.time}</td><td>${entry.type}</td><td>✔️</td>`;
+      logTableBody.appendChild(row);
+    });
 
     function generateQRCode() {
       const id = document.getElementById("employeeId").value.trim();
@@ -132,6 +138,7 @@
 
       const entry = { name, time, type, date };
       logs.push(entry);
+      localStorage.setItem("attendanceLogs", JSON.stringify(logs));
 
       const row = document.createElement("tr");
       row.innerHTML = `<td>${entry.name}</td><td>${entry.time}</td><td>${entry.type}</td><td>✔️</td>`;
