@@ -141,15 +141,15 @@
       saveToGoogleSheets(entry);
     }
 
-    // Google Sheets 저장
-    function saveToGoogleSheets(entry) {
-      fetch("https://script.google.com/macros/s/AKfycbwXb6MekhTCTPIG4gVhQYz-tKt3mGu39GhqOqnZDmZCpmIyQAi_mRx6uyts9QDm3GcMzQ/exec", {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(entry)
-      }).catch(err => console.error("Google 저장 오류", err));
-    }
+      // Google Sheets 저장
+      function saveToGoogleSheets(entry) {
+        fetch("https://script.google.com/macros/s/AKfycbxUzRwn189AypIh_uq9JSy2v0C8krZBTDn_EJy4dn_OPaEbPQEp9QGZjrJDuNXHlm9l/exec", {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(entry)
+        }).catch(err => console.error("Google 저장 오류", err));
+      }
 
     // CSV 다운로드
     function downloadCSV() {
