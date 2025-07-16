@@ -67,7 +67,7 @@
       <tr>
         <th>이름</th>
         <th>시간</th>
-        <th>구매</th>
+        <th>구분</th>
         <th>확인</th>
       </tr>
     </thead>
@@ -153,7 +153,7 @@
 
     // CSV 다운로드
     function downloadCSV() {
-      let csv = "이름,시간,구매\n";
+      let csv = "이름,시간,구분\n";
       logs.forEach(log => {
         csv += `${log.name},${log.time},${log.type}\n`;
       });
