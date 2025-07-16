@@ -122,19 +122,25 @@
       });
     }
 
-    // 출퇴근 기록 저장
+    // 출퇴근 기록 저장 (확인창 포함)
     function recordAttendance(id) {
       const now = new Date().toLocaleTimeString();
 
       if (!attendanceData[id]) {
-        attendanceData[id] = { checkIn: now, checkOut: "" };
+        const confirmIn = confirm(`[${id}] 님 출근하시겠습니까?`);
+        if (confirmIn) {
+          attendanceData[id] = { checkIn: now, checkOut: "" };
+          updateTable();
+        }
       } else if (!attendanceData[id].checkOut) {
-        attendanceData[id].checkOut = now;
+        const confirmOut = confirm(`[${id}] 님 퇴근하시겠습니까?`);
+        if (confirmOut) {
+          attendanceData[id].checkOut = now;
+          updateTable();
+        }
       } else {
-        alert(`[${id}] 이미 출퇴근이 완료되었습니다.`);
+        alert(`[${id}] 님은 이미 출퇴근을 완료하셨습니다.`);
       }
-
-      updateTable();
     }
 
     // 출근부 테이블 갱신
@@ -153,12 +159,11 @@
       }
     }
 
-    // 카메라 초기화 및 후면 카메라 우선 선택
+    // 카메라 초기화 (후면 카메라 우선)
     const html5QrCode = new Html5Qrcode("reader");
 
     Html5Qrcode.getCameras().then(cameras => {
       if (cameras && cameras.length) {
-        // 'back' 또는 'environment' 카메라를 우선 선택
         const backCamera = cameras.find(cam =>
           cam.label.toLowerCase().includes("back") ||
           cam.label.toLowerCase().includes("environment")
@@ -171,7 +176,7 @@
             recordAttendance(qrCodeMessage.trim());
           },
           errorMessage => {
-            // 오류 무시 가능
+            // 무시 가능
           }
         );
       }
