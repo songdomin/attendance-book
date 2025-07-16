@@ -141,15 +141,15 @@
       saveToGoogleSheets(entry);
     }
 
-      // Google Sheets 저장
-      function saveToGoogleSheets(entry) {
-        fetch("https://script.google.com/macros/s/https://script.google.com/macros/s/AKfycbwGBYXHIIJZh0IiXwfNQl1f9h7PHlXAVS7cnIeaysOkccw1PUaL0qv1n1FZkce-1f3O/exec", {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(entry)
-        }).catch(err => console.error("Google 저장 오류", err));
-      }
+    // Google Sheets 저장
+    function saveToGoogleSheets(entry) {
+      fetch("https://script.google.com/macros/s/AKfycbwGBYXHIIJZh0IiXwfNQl1f9h7PHlXAVS7cnIeaysOkccw1PUaL0qv1n1FZkce-1f3O/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(entry)
+      }).catch(err => console.error("Google 저장 오류", err));
+    }
 
     // CSV 다운로드
     function downloadCSV() {
@@ -172,11 +172,23 @@
         video.srcObject = stream;
         setInterval(scanQRCode, 1500);
       }).catch(err => {
-        alert("\uce74\uba54\ub77c \uc811\uadfc \uc624\ub958: " + err.message);
+        alert("카메라 접근 오류: " + err.message);
       });
     }
 
     startCamera();
+  </script>
+
+  <script>
+  // Google Apps Script에 입력할 서버 측 코드 (참고용 주석)
+  /*
+  function doPost(e) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    const data = JSON.parse(e.postData.contents);
+    sheet.appendRow([data.name, data.time, data.type]);
+    return ContentService.createTextOutput("Success");
+  }
+  */
   </script>
 
 </body>
